@@ -113,11 +113,30 @@ Hint: look at `node:readline/promises`. `rl.question()` returns a Promise.
 peak-hour pricing, weekly repeating bookings, a waitlist when a room is full, suggesting the nearest free slot,
 daily room usage stats, exporting the schedule to Markdown/CSV, validating the JSON data with a type guard.
 
+1. Implemented a coupon system with two types of coupons: hourly and fixed-value.
+2. Added daily room usage statistics.
+
 **Think (15 points), answer in the README:**
 
 1. Change `"start": 9` in `bookings.json` to `"9"` and the app prints `09:00-92:00`, with no TypeScript error. Why? How would you handle it?
+
+    Answer:
+    - TypeScript is used during compilation and in the editor, but it is erased at runtime. The application runs as JavaScript, so TypeScript's type checks do not validate the input at runtime.
+
+    - To handle this, I would validate the input at runtime with a type guard, such as checking its type with JavaScript (`typeof targetValue === "number"`).
+
 2. With 1 million bookings, where is the overlap check slow? What is V8 doing at that moment?
+
+    Answer:
+    - The overlap check becomes slow while iterating over every pair of bookings. This process has O(n^2) time complexity.
+
+    - V8 is executing nested loops and performing the overlap comparisons for each pair of bookings.
+
+
 3. Two terminals book the same room, at the same time, and save the file at the same moment. What happens?
+
+    Answer:
+    - The later terminal's save overwrites the earlier one, so the first booking is lost.
 
 ### How to submit
 
