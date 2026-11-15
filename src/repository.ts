@@ -18,4 +18,22 @@ export class Repository<T extends { id: string }> {
   findById(id: string): T | undefined {
     return this.items.find((item) => item.id === id);
   }
+
+  update(item: T): boolean {
+    const index = this.items.findIndex((current) => current.id === item.id);
+
+    if (index === -1) return false;
+
+    this.items[index] = item;
+    return true;
+  }
+
+  remove(id: string): boolean {
+    const index = this.items.findIndex((item) => item.id === id);
+
+    if (index === -1) return false;
+
+    this.items.splice(index, 1);
+    return true;
+  }
 }
