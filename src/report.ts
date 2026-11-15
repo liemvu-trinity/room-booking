@@ -1,4 +1,4 @@
-import { Booking, Room, Status } from "./models.js";
+import { Booking, Room, RoomName, Status } from "./models.js";
 
 export function vnd(amount: number): string {
   return `${amount.toLocaleString("en-US")} VND`;
@@ -53,4 +53,42 @@ export function printReport(bookings: Booking[], rooms: Room[]): void {
 
   const conflicts = bookings.filter((b) => clashWith(b, bookings)).length;
   if (conflicts > 0) console.log(`⚠ ${conflicts} conflict(s) found`);
+}
+
+export function listDate(bookings: Booking[], date: string): Array<Booking> {
+  return bookings.filter((booking) => booking.date === date);
+}
+
+export function roomUsage(bookings: Booking[], date: string, room: RoomName, rooms: Room[]): void {
+  const dailyBookings = listDate(bookings, date);
+  const confirmedBookings = dailyBookings.filter((booking) => booking.status === Status.Confirmed);
+  const roomBookings = confirmedBookings
+    .filter((booking) => booking.room === room)
+    .sort((a, b) => a.start - b.start)
+    .map((booking) => ({
+      ...booking,
+      amount: cost(booking, rooms),
+    }));
+
+  const hours = roomBookings.reduce((sum, booking) => sum + booking.hours, 0);
+  console.log(`${room}: ${roomBookings.length} confirmed booking(s), ${hours} booked hour(s)`);
+  if (roomBookings.length === 0) {
+    console.log("No bookings.");
+    return;
+  }
+  console.table(roomBookings.map((booking) => ({
+    id: booking.id,
+    customer: booking.customer,
+    start: time(booking.start),
+    end: time(booking.start + booking.hours),
+    hours: booking.hours,
+    status: booking.status,
+    amount: vnd(booking.amount),
+  })));
+}
+
+export function venueReport(bookings: Booking[], date: string, rooms: Room[]): number {
+  const list = listDate(bookings, date);
+  const venueList = list.filter((booking) => booking.status === Status.Confirmed);
+  return venueList.reduce((sum, b) => sum + cost(b, rooms), 0);
 }
