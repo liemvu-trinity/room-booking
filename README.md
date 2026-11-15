@@ -119,6 +119,56 @@ daily room usage stats, exporting the schedule to Markdown/CSV, validating the J
 2. With 1 million bookings, where is the overlap check slow? What is V8 doing at that moment?
 3. Two terminals book the same room, at the same time, and save the file at the same moment. What happens?
 
+### Trả lời câu hỏi tư duy
+
+**Câu 1: Vì sao `"start": "9"` gây tính sai giờ mà TypeScript không báo lỗi? Cách xử lý?**
+
+Theo em hiểu, `as T[]` khiến TypeScript tin dữ liệu đúng kiểu `Booking[]` mà không
+kiểm tra lại các field. Vì vậy `start` là string `"9"` vẫn được đọc vào,
+khi cộng `"9" + 2` sẽ thành `"92"`. Để fix, cần kiểm tra kiểu dữ liệu và giá trị
+của các field trong `data` sau `JSON.parse()`, trước khi đưa vào `bookingRepo`.
+
+**Câu 2: Với 1 triệu booking, kiểm tra trùng lịch chậm ở đâu? V8 đang làm gì lúc đó?**
+
+Việc kiểm tra chậm ở bước lấy từng bản ghi và so sánh với đơn booking hiện tại.
+
+### Tính năng sáng tạo đã thực hiện: thống kê booking theo phòng và ngày
+
+Hiện tại đã thực hiện **1 tính năng sáng tạo**: xem chi tiết các booking đã xác nhận
+của từng phòng trong một ngày, kèm số lượng booking và tổng giờ đặt.
+
+**Cách sử dụng:** chạy `npm run dev`, sau đó nhập lệnh trong chương trình:
+
+```text
+stats 2026-11-12
+```
+
+Chương trình hiển thị từng phòng với bảng gồm ID booking, khách hàng, giờ bắt đầu,
+giờ kết thúc, thời lượng, trạng thái và số tiền (VND). Các booking được sắp xếp
+theo giờ bắt đầu. Chỉ booking có trạng thái `Status.Confirmed` được thống kê;
+booking đang chờ hoặc đã hủy không được tính. Phòng không có booking đã xác nhận
+sẽ hiển thị 0 booking, 0 giờ và thông báo không có booking.
+
+Ngày nhập phải hợp lệ và có định dạng `YYYY-MM-DD`. Nếu nhập sai, chương trình
+hiển thị hướng dẫn sử dụng và tiếp tục chờ lệnh.
+
+**Thiết kế:** nhánh lệnh `stats` trong `src/main.ts` duyệt danh sách phòng và gọi
+`roomUsage(bookings, date, room, rooms)` trong `src/report.ts` cho từng phòng.
+Tham số `room` là tên phòng cần lọc; `rooms` chứa dữ liệu giá phòng để tính tiền.
+Hàm xử lý theo thứ tự:
+
+1. Dùng `listDate()` lấy các booking đúng ngày.
+2. Dùng `filter()` giữ booking đã xác nhận, rồi lọc theo phòng yêu cầu.
+3. Dùng `sort()` sắp xếp theo giờ bắt đầu.
+4. Dùng `map()` và `...booking` tạo mảng các object mới, thêm trường `amount`
+   bằng hàm `cost(booking, rooms)`, không sửa booking gốc.
+5. Dùng `reduce()` cộng tổng giờ đặt và in kết quả bằng `console.log()` cùng
+   `console.table()`. Hàm có kiểu trả về `void`.
+
+Tổng giờ được tính bằng cách cộng thời lượng từng booking, không phải thời gian
+sử dụng phòng thực tế. Nếu dữ liệu cũ chứa booking trùng giờ, thời lượng của mỗi
+booking vẫn được cộng riêng.
+
 ### How to submit
 
 ```bash
