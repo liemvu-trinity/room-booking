@@ -1,7 +1,17 @@
-import { Booking, Room, RoomName, Status } from "./models.js";
+import { Booking, Coupon, Room, RoomName, Status } from "./models.js";
 import { Repository } from "./repository.js";
-import { printReport, time } from "./report.js";
-import { loadBookings, loadRooms, saveBookings } from "./storage.js";
+import {
+  cost,
+  couponDiscount,
+  findCoupon,
+  printCoupons,
+  printDailyStats,
+  printReport,
+  time,
+  validateCoupon,
+  vnd,
+} from "./report.js";
+import { loadBookings, loadCoupons, loadRooms, saveBookings } from "./storage.js";
 import * as Readline from "node:readline/promises";
 
 const DAY = "2026-11-12";
@@ -74,10 +84,15 @@ async function updateBookingStatus(
 }
 
 async function main(): Promise<void> {
-  // Two files, loaded at the same time (principle 4)
-  const [rooms, bookings] = await Promise.all([loadRooms(), loadBookings()]);
+  // Load rooms, bookings, and coupons in parallel (principle 4)
+  const [rooms, bookings, coupons] = await Promise.all([
+    loadRooms(),
+    loadBookings(),
+    loadCoupons(),
+  ]);
   const roomRepo = new Repository<Room>(rooms);
   const bookingRepo = new Repository<Booking>(bookings);
+  const couponRepo = new Repository<Coupon>(coupons);
 
   const rl = Readline.createInterface({
     input: process.stdin,
@@ -86,7 +101,7 @@ async function main(): Promise<void> {
 
   while (true) {
     const line = await rl.question("> ");
-    const [command, ...args] = line.split(" ");
+    const [command, ...args] = line.trim().split(/\s+/);
 
     switch (command) {
       case "help":
@@ -97,11 +112,13 @@ async function main(): Promise<void> {
 All commands:
   help - Show this help
   list <date> - List all bookings for a date
-  book <customer> <room> <start> <hours> - Book a room
+  book <customer> <room> <start> <hours> [coupon] - Book a room
+  coupons - List available coupon codes
   confirm <id> - Confirm a booking
   cancel <id> - Cancel a booking
   available <room> <date> - Check if a room is available on a date
   revenue <date> - Show revenue for a date
+  stats <date> - Show daily room usage stats for a date
   exit - Exit the application
           `;
 
@@ -132,7 +149,7 @@ All commands:
           // Respond the result
           console.log(`Bookings for ${targetDate}:`);
           console.log(`Total bookings: ${bookingsForDate.length}`);
-          printReport(bookingsForDate, roomRepo.getAll());
+          printReport(bookingsForDate, roomRepo.getAll(), couponRepo.getAll());
 
           break;
         }
@@ -140,10 +157,8 @@ All commands:
       case "book":
         {
           // 1. Validate arguments
-
-          // Validate argument count
-          if (args.length !== 4) {
-            console.log("Usage: book <customer> <room> <start> <hours>");
+          if (args.length < 4 || args.length > 5) {
+            console.log("Usage: book <customer> <room> <start> <hours> [coupon]");
             break;
           }
 
@@ -153,21 +168,39 @@ All commands:
             break;
           }
 
+          const start = Number(args[2]);
+          const hours = Number(args[3]);
+          if (!isValidBookingHour(start, hours)) {
+            console.log("Invalid start or hours. Must be between 0 and 23.");
+            break;
+          }
+
+          const couponCode = args[4];
+          const appliedCoupon = findCoupon(couponCode, couponRepo.getAll());
+          if (couponCode && !appliedCoupon) {
+            console.log(`Unknown coupon "${couponCode}". Use "coupons" to list valid codes.`);
+            break;
+          }
+
+          const roomsList = roomRepo.getAll();
+          if (appliedCoupon) {
+            const couponError = validateCoupon(appliedCoupon, targetRoom, hours, roomsList);
+            if (couponError) {
+              console.log(couponError);
+              break;
+            }
+          }
+
           const booking: Booking = {
             id: `bk-${Date.now()}`,
             room: targetRoom,
             customer: String(args[0]),
             date: DAY,
-            start: Number(args[2]),
-            hours: Number(args[3]),
+            start,
+            hours,
             status: Status.Pending,
+            ...(appliedCoupon ? { coupon: appliedCoupon.id } : {}),
           };
-
-          // Validate start and hours
-          if (!isValidBookingHour(booking.start, booking.hours)) {
-            console.log("Invalid start or hours. Must be between 0 and 23.");
-            break;
-          }
 
           // 2. Check if the booking is conflicting with existing bookings
           const conflictingBooking = bookingRepo
@@ -190,7 +223,13 @@ All commands:
           await saveBookings(bookingRepo.getAll());
 
           // 4. Respond the result
-          console.log(`+ Booked: ${booking.room} ${time(booking.start)}-${time(booking.start + booking.hours)} for ${booking.customer}`);
+          const couponsList = couponRepo.getAll();
+          const discount = couponDiscount(booking, roomsList, couponsList);
+          const finalCost = cost(booking, roomsList, couponsList);
+          const couponMsg = appliedCoupon
+            ? ` (coupon ${appliedCoupon.id}: -${vnd(discount)}, total: ${vnd(finalCost)})`
+            : "";
+          console.log(`+ Booked: ${booking.room} ${time(booking.start)}-${time(booking.start + booking.hours)} for ${booking.customer}${couponMsg}`);
           console.log(`Saved ${bookingRepo.getAll().length} bookings to bookings.json`);
 
           break;
@@ -332,8 +371,42 @@ All commands:
           }
 
           // 3. Respond the result
-          printReport(bookingsForDate, roomRepo.getAll());
+          printReport(bookingsForDate, roomRepo.getAll(), couponRepo.getAll());
 
+          break;
+        }
+
+      case "stats":
+        {
+          if (args.length !== 1) {
+            console.log("Usage: stats <date>");
+            break;
+          }
+
+          const targetDate = args[0];
+          if (!isValidDate(targetDate)) {
+            console.log("Invalid date. Use YYYY-MM-DD.");
+            break;
+          }
+
+          printDailyStats(
+            bookingRepo.getAll(),
+            roomRepo.getAll(),
+            targetDate,
+            couponRepo.getAll(),
+          );
+
+          break;
+        }
+
+      case "coupons":
+        {
+          if (args.length !== 0) {
+            console.log("Usage: coupons");
+            break;
+          }
+
+          printCoupons(couponRepo.getAll());
           break;
         }
 

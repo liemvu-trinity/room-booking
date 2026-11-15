@@ -2,4 +2,5 @@
 import { copyFile } from "node:fs/promises";
 
 await copyFile("data/bookings.seed.json", "bookings.json");
-console.log("bookings.json has been reset to the original data.");
+await copyFile("data/coupons.seed.json", "coupons.json");
+console.log("bookings.json, coupons.json has been reset to the original data.");

@@ -1,5 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { Booking, Room } from "./models.js";
+import { Booking, Coupon, Room } from "./models.js";
 
 // One generic loader for any list stored as JSON.
 async function loadList<T>(file: string): Promise<T[]> {
@@ -18,6 +18,7 @@ async function loadList<T>(file: string): Promise<T[]> {
 
 export const loadRooms = () => loadList<Room>("rooms.json");
 export const loadBookings = () => loadList<Booking>("bookings.json");
+export const loadCoupons = () => loadList<Coupon>("coupons.json");
 
 export async function saveBookings(bookings: Booking[]): Promise<void> {
   await writeFile("bookings.json", JSON.stringify(bookings, null, 2), "utf-8");
