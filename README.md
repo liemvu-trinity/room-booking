@@ -129,6 +129,84 @@ git push origin homework/<your-name>
 
 Open a Pull Request titled `[Homework] <Full name>` and list the creative challenges you chose.
 
+## Creative Challenges
+
+### 1. Peak-Hour Pricing
+
+**Design:**
+
+The booking system supports dynamic pricing based on peak hours. Instead of applying a higher price to the entire booking, the system only applies the peak-hour multiplier to the hours that overlap with the configured peak period.
+
+For this implementation, the peak period is configured from 18:00 to 20:00, with a pricing multiplier of 1.5x.
+
+**Implementation:**
+
+- Define a `PEAK_HOURS` configuration containing the start time, end time, and pricing multiplier.
+- Calculate the number of hours overlapping between a booking and the peak period using `calculatePeakHour()`.
+- Calculate normal hours by subtracting peak hours from the total booking duration.
+- Calculate the final cost by combining the normal-hour cost and peak-hour cost.
+
+The pricing formula is:
+
+```text
+Normal Hours = Total Booking Hours - Peak Hours
+
+Total Cost = Hourly Price × (Normal Hours + Peak Hours × Multiplier)
+```
+
+**Example:**
+
+Assume a room costs 100,000 VND per hour, and the peak period is from 18:00 to 20:00.
+
+A booking from 17:00 to 21:00 has:
+- 2 normal hours (17:00–18:00 and 20:00–21:00).
+- 2 peak hours (18:00–20:00).
+
+The total cost is:
+
+```text
+100,000 × (2 + 2 × 1.5) = 500,000 VND
+```
+
+This approach ensures that only the overlapping hours receive the higher rate, rather than charging the peak-hour price for the entire booking.
+
+### 2. Daily Room Usage Statistics
+
+**Design:**
+
+The system provides daily room usage statistics to show how much each room is utilized on a specific date.
+
+Instead of calculating usage for only one room, the function processes all available rooms and returns their usage information for the requested date.
+
+**Implementation:**
+
+The `getDailyRoomUsage()` function receives the booking repository, room repository, and target date.
+
+For each room, the function:
+
+1. Retrieves bookings belonging to that room on the requested date.
+2. Filters out bookings that are not `Confirmed` or belong to another date.
+3. Calculates the total booked hours using `reduce()`.
+4. Calculates the room usage percentage based on 24 hours.
+5. Returns the room information together with its usage statistics.
+
+The usage percentage is calculated using:
+
+```text
+Usage Percentage = (Total Confirmed Booking Hours / 24) × 100
+```
+
+**Example:**
+
+If a room has 6 confirmed booking hours on a particular day:
+
+```text
+Usage Percentage = (6 / 24) × 100 = 25%
+```
+
+The result includes the room information, date, total booked hours, and usage percentage.
+
+This feature helps identify room utilization levels and provides useful information for analyzing daily room usage.
 ### Think
 ## 1. What happens if I change `"start": 9` to `"start": "9"` in `bookings.json`? Why doesn't TypeScript catch this error?
 
