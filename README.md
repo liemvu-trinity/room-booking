@@ -128,3 +128,14 @@ git push origin homework/<your-name>
 ```
 
 Open a Pull Request titled `[Homework] <Full name>` and list the creative challenges you chose.
+
+#### Peak-hour pricing
+
+Bookings during 09:00–12:00 and 17:00–20:00 use a 1.5× multiplier.
+The price is calculated hour by hour, so a booking that crosses a peak period charges normal and peak prices correctly
+
+#### Daily room usage statistics
+
+The `usage <date>` command reports the number of booked hours for each room.
+Cancelled bookings are excluded, while pending and confirmed bookings count
+as occupied time.

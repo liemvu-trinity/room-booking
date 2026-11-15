@@ -8,11 +8,26 @@ export function time(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
-export function cost(b: Booking, rooms: Room[]): number {
-  const price = rooms.find((r) => r.id === b.room)?.pricePerHour ?? 0;
-  return b.hours * price;
+// export function cost(b: Booking, rooms: Room[]): number {
+//   const price = rooms.find((r) => r.id === b.room)?.pricePerHour ?? 0;
+//   return b.hours * price;
+// }
+
+function isPeakHour(hour: number): boolean {
+  return (hour >= 9 && hour < 12) || (hour >= 17 && hour < 20);
 }
 
+function hourlyPrice(room: Room, hour: number): number {
+  return isPeakHour(hour) ? room.pricePerHour * 1.5 : room.pricePerHour;
+}
+
+export function cost(b: Booking, rooms: Room[]): number {
+  const room = rooms.find((item) => item.id === b.room);
+
+  if (!room) return 0;
+
+  return Array.from({ length: b.hours }, (_, i) => b.start + i).map((hour) => hourlyPrice(room, hour)).reduce((total, price) => total + price, 0);
+}
 // Two bookings clash when they use the same room on the same day at overlapping hours.
 export function overlaps(a: Booking, b: Booking): boolean {
   return a.room === b.room && a.date === b.date && a.start < b.start + b.hours && b.start < a.start + a.hours;
