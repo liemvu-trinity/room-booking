@@ -113,11 +113,23 @@ Hint: look at `node:readline/promises`. `rl.question()` returns a Promise.
 peak-hour pricing, weekly repeating bookings, a waitlist when a room is full, suggesting the nearest free slot,
 daily room usage stats, exporting the schedule to Markdown/CSV, validating the JSON data with a type guard.
 
-**Think (15 points), answer in the README:**
+## Creative challenges
 
-1. Change `"start": 9` in `bookings.json` to `"9"` and the app prints `09:00-92:00`, with no TypeScript error. Why? How would you handle it?
-2. With 1 million bookings, where is the overlap check slow? What is V8 doing at that moment?
-3. Two terminals book the same room, at the same time, and save the file at the same moment. What happens?
+### Nearest free slot suggestion
+The `suggest <room> <date> <start> <hours>` command finds the nearest available time slot for a room and date. If two slots are equally close, it chooses the earlier one. Cancelled bookings do not block a suggested slot.
+
+### Daily room usage stats
+The `stats <date>` command shows the number of booked hours for each room on that date. It excludes cancelled bookings and later bookings that overlap an earlier non-cancelled booking.
+
+**Think (15 points), answer in the README:**
+Why can "start": "9" print 09:00-92:00 without a TypeScript error? How would you handle it?
+TypeScript checks the types used in the source code, but it does not validate JSON data at runtime. JSON.parse() can return a booking whose start is actually the string "9", even if the code uses a type assertion such as as Booking[]. In JavaScript, adding the string "9" to the number 2 produces the string "92", which the time formatter then displays as 92:00. I would parse the JSON as unknown and validate each booking with a type guard before using it. The guard should require start and hours to be integers in the allowed range and reject invalid data with a clear error.
+
+With one million bookings, where is the overlap check slow? What is V8 doing?
+Checking a new booking with some() scans the bookings array, so one check takes O(n) time in the worst case. Generating a full report can be slower: it checks each booking against earlier bookings, which can take O(n²) time overall. V8 is running these JavaScript callbacks and comparisons synchronously on the main thread. Because the work is CPU-bound, it blocks the event loop until the scans finish. An index by room and date would reduce the number of bookings that need to be checked.
+
+What happens if two terminals book the same room at the same time and save the file?
+Each terminal has its own in-memory copy of the bookings. Both can read the file before either save completes, see the time as free, and accept the booking. They then write their copies to the same JSON file without a shared transaction or lock. One booking may overwrite the other, or the saved result may otherwise depend on the timing of the writes; both terminals might still report success. A database transaction or another cross-process locking mechanism is needed to prevent this race.
 
 ### How to submit
 

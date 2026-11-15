@@ -17,9 +17,15 @@ export function cost(b: Booking, rooms: Room[]): number {
 export function overlaps(a: Booking, b: Booking): boolean {
   return a.room === b.room && a.date === b.date && a.start < b.start + b.hours && b.start < a.start + a.hours;
 }
-
+export function hasConflict(newBooking: Booking, all: Booking[]): boolean {
+  return all.some(
+    (other) =>
+      other.status !== Status.Cancelled &&
+      overlaps(other, newBooking)
+  );
+}
 // The first earlier, non-cancelled booking that clashes with b (if any).
-function clashWith(b: Booking, all: Booking[]): Booking | undefined {
+export function clashWith(b: Booking, all: Booking[]): Booking | undefined {
   if (b.status === Status.Cancelled) return undefined;
   const earlier = all.slice(0, all.indexOf(b));
   return earlier.find((o) => o.status !== Status.Cancelled && overlaps(o, b));
@@ -46,7 +52,9 @@ export function printReport(bookings: Booking[], rooms: Room[]): void {
   console.log(lines.join("\n"));
 
   // The assembly line: filter -> map -> reduce
-  const confirmed = bookings.filter((b) => b.status === Status.Confirmed);
+  const confirmed = bookings.filter(
+    (b) => b.status === Status.Confirmed && !clashWith(b, bookings)
+  );
   const amounts = confirmed.map((b) => cost(b, rooms));
   const revenue = amounts.reduce((sum, a) => sum + a, 0);
   console.log(`Revenue (confirmed): ${vnd(revenue)}`);
