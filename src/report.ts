@@ -1,4 +1,5 @@
-import { Booking, Room, Status } from "./models.js";
+import { Booking, Room, Status, RoomUsage, PeakHour } from "./models.js";
+import { Repository } from "./repository.js";
 
 export function vnd(amount: number): string {
   return `${amount.toLocaleString("en-US")} VND`;
@@ -8,9 +9,34 @@ export function time(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
+const PEAK_HOURS: PeakHour = {
+  start: 18,
+  end: 20,
+  multiplier: 1.5,
+}
+
+export function calculatePeakHour(b: Booking): number {
+  return Math.max(
+    0,
+    Math.min(PEAK_HOURS.end, b.start + b.hours) - Math.max(PEAK_HOURS.start, b.start)
+  );
+}
+
+
 export function cost(b: Booking, rooms: Room[]): number {
   const price = rooms.find((r) => r.id === b.room)?.pricePerHour ?? 0;
-  return b.hours * price;
+  const peakHours = calculatePeakHour(b);
+  const normalHours = b.hours - peakHours;
+  return Math.round(price * (normalHours + peakHours * PEAK_HOURS.multiplier));
+
+}
+export function findConflict(b: Booking, all: Booking[]): Booking | undefined {
+  return all.find(
+    (existing) =>
+      existing.id !== b.id &&
+      existing.status !== Status.Cancelled &&
+      overlaps(existing, b)
+  );
 }
 
 // Two bookings clash when they use the same room on the same day at overlapping hours.
@@ -54,3 +80,25 @@ export function printReport(bookings: Booking[], rooms: Room[]): void {
   const conflicts = bookings.filter((b) => clashWith(b, bookings)).length;
   if (conflicts > 0) console.log(`⚠ ${conflicts} conflict(s) found`);
 }
+export function Revenue(bookings: Booking[], rooms: Room[], date: string): number {
+  const confirmed = bookings.filter((booking) => booking.status === Status.Confirmed && booking.date === date);
+  const amounts = confirmed.map((b) => cost(b, rooms));
+  return amounts.reduce((sum, a) => sum + a, 0);
+}
+//THINKING
+export async function getDailyRoomUsage(bookingRepo: Repository<Booking>,roomRepo: Repository<Room>, date: string): Promise<RoomUsage[]>{
+    const b = bookingRepo.getAll();
+    const r = roomRepo.getAll();
+    const results: RoomUsage[] = [];
+  r.forEach((room) => {
+    const bookingsForRoom = b.filter((booking) => booking.room === room.id && booking.date === date && booking.status === Status.Confirmed);
+    const totalHours = bookingsForRoom.reduce((sum, booking) => sum + booking.hours, 0);
+    const usagePercentage = (totalHours / 24) * 100;
+    results.push({ ...room, date, totalHours, usagePercentage });
+  });
+  return results;
+};
+
+
+
+

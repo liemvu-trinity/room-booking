@@ -20,3 +20,13 @@ export interface Room {
   readonly id: RoomName;
   pricePerHour: number; // VND
 }
+export type RoomUsage = Room & {
+  date: string;
+  totalHours: number;
+  usagePercentage: number;
+}
+export interface PeakHour { 
+  start: number;
+  end: number;
+  multiplier: number;
+}

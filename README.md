@@ -128,3 +128,116 @@ git push origin homework/<your-name>
 ```
 
 Open a Pull Request titled `[Homework] <Full name>` and list the creative challenges you chose.
+
+## Creative Challenges
+
+### 1. Peak-Hour Pricing
+
+**Design:**
+
+The booking system supports dynamic pricing based on peak hours. Instead of applying a higher price to the entire booking, the system only applies the peak-hour multiplier to the hours that overlap with the configured peak period.
+
+For this implementation, the peak period is configured from 18:00 to 20:00, with a pricing multiplier of 1.5x.
+
+**Implementation:**
+
+- Define a `PEAK_HOURS` configuration containing the start time, end time, and pricing multiplier.
+- Calculate the number of hours overlapping between a booking and the peak period using `calculatePeakHour()`.
+- Calculate normal hours by subtracting peak hours from the total booking duration.
+- Calculate the final cost by combining the normal-hour cost and peak-hour cost.
+
+The pricing formula is:
+
+```text
+Normal Hours = Total Booking Hours - Peak Hours
+
+Total Cost = Hourly Price × (Normal Hours + Peak Hours × Multiplier)
+```
+
+**Example:**
+
+Assume a room costs 100,000 VND per hour, and the peak period is from 18:00 to 20:00.
+
+A booking from 17:00 to 21:00 has:
+- 2 normal hours (17:00–18:00 and 20:00–21:00).
+- 2 peak hours (18:00–20:00).
+
+The total cost is:
+
+```text
+100,000 × (2 + 2 × 1.5) = 500,000 VND
+```
+
+This approach ensures that only the overlapping hours receive the higher rate, rather than charging the peak-hour price for the entire booking.
+
+### 2. Daily Room Usage Statistics
+
+**Design:**
+
+The system provides daily room usage statistics to show how much each room is utilized on a specific date.
+
+Instead of calculating usage for only one room, the function processes all available rooms and returns their usage information for the requested date.
+
+**Implementation:**
+
+The `getDailyRoomUsage()` function receives the booking repository, room repository, and target date.
+
+For each room, the function:
+
+1. Retrieves bookings belonging to that room on the requested date.
+2. Filters out bookings that are not `Confirmed` or belong to another date.
+3. Calculates the total booked hours using `reduce()`.
+4. Calculates the room usage percentage based on 24 hours.
+5. Returns the room information together with its usage statistics.
+
+The usage percentage is calculated using:
+
+```text
+Usage Percentage = (Total Confirmed Booking Hours / 24) × 100
+```
+
+**Example:**
+
+If a room has 6 confirmed booking hours on a particular day:
+
+```text
+Usage Percentage = (6 / 24) × 100 = 25%
+```
+
+The result includes the room information, date, total booked hours, and usage percentage.
+
+This feature helps identify room utilization levels and provides useful information for analyzing daily room usage.
+### Think
+## 1. What happens if I change `"start": 9` to `"start": "9"` in `bookings.json`? Why doesn't TypeScript catch this error?
+
+TypeScript only checks types at compile time. It does not automatically validate data loaded from JSON files at runtime.
+
+When the application reads the JSON file, `JSON.parse()` returns JavaScript values. If the parsed data is assigned to a TypeScript type using a type assertion such as `as Booking[]`, TypeScript trusts that assertion without checking the actual data.
+
+As a result, `"9"` remains a string. When JavaScript evaluates `"9" + 2`, it performs string concatenation and returns `"92"` instead of performing numeric addition. This can lead to unexpected output such as `09:00-92:00`.
+
+To prevent this, the application should validate external data at runtime before using it. For example, it can check that `start` is a number and that it is within the valid range.
+
+## 2. If there are 1 million bookings, where will the overlap check become slow? What is V8 doing?
+
+The main performance bottleneck is the `clashWith()` function in `report.ts`.
+
+The slow part is clashWith() in report.ts. Every call does three things: indexOf to find where the current booking sits in the array, slice to copy out everything before it, and find to look through that copy for a clash. The problem is that it runs once per booking, and printReport calls it a second time when it counts conflicts, so the whole thing happens twice.
+
+When nothing clashes, find has to scan the entire earlier part of the array before giving up. Booking number k scans k items, so the total adds up to about n²/2. With n = 1 million, that’s roughly 500 billion comparisons. On top of that, each slice allocates a new array, so memory use goes up and the garbage collector has to keep cleaning behind us.
+
+As for V8, it runs JavaScript synchronously on a single main thread. While this loop is running, the event loop is blocked, so the program just freezes until it finishes.
+
+My fix would be to group bookings by room and date using a Map, sort each group by start time, and scan each one once. After sorting, I only need to compare a booking with the one right before it: if its start is earlier than the previous one’s end, they overlap. The ones further back don’t matter, because they start even earlier, so any clash with them would already have been caught.
+
+For the complexity: grouping with a Map is O(n), sorting all the groups adds up to at most O(n log n), and the scan is O(n). Sorting is the biggest piece, so the total is O(n log n). For 1 million bookings that’s about 20 million operations instead of 500 billion, around 25,000 times faster. I’d also compute the conflicts once and reuse the result instead of doing it twice.
+## 3. Two terminals book the same room, at the same time, and save the file at the same moment. What happens?
+Each terminal runs as its own process, and each one keeps its own copy of the bookings in memory. They don’t talk to each other, so neither one can see what the other is doing.
+
+Here’s how it goes wrong. Terminal A and Terminal B both load bookings.json. Both check whether the room is free at the time they want, and both see that it is, because neither has saved anything yet. Both create a booking and write their own version of the array back to the file.
+
+This is a race condition, and it can end in two ways. The first is a lost update: whoever writes last overwrites the other one’s booking, so one customer thinks they have a room and the file says otherwise. The second is that both bookings end up saved and overlap, if the writes happen to merge in the wrong order. There’s also a smaller risk: if the program crashes halfway through writing the file, the JSON can be left corrupted.
+
+There are a few ways to deal with it:
+- FILE locking: only one process at a time can do a read, check, write sequence. After getting the lock, the process has to reload the file first, otherwise it’s still working with old data.
+- Move to a database like PostgreSQL. Use transactions, and add an exclusion constraint on room and time range, so the database itself rejects an overlapping booking
