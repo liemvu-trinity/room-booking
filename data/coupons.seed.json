@@ -1,0 +1,5 @@
+[
+  { "id": "FREE1H", "couponType": "HOUR", "freeHours": 1 },
+  { "id": "FREE5H", "couponType": "HOUR", "freeHours": 5 },
+  { "id": "SALE10k", "couponType": "FIXED", "discount": 10000, "minimum": 20000 }
+]

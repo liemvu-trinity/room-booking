@@ -77,7 +77,7 @@ Check: `git config --global --list` shows your name and email.
 You'll also need a **GitHub account** (or whatever Git server your trainer uses) to push
 your homework. Your trainer will give you the repository URL.
 
-- [ ] Device ready: tools installed, versions checked, Git configured.
+- [x] Device ready: tools installed, versions checked, Git configured.
 
 ---
 
@@ -122,7 +122,7 @@ What you should see: one commit.
 1a2b3c4 Initial commit
 ```
 
-- [ ] `git log` shows the `Initial commit` and no error.
+- [x] `git log` shows the `Initial commit` and no error.
 
 ---
 
@@ -156,7 +156,7 @@ tsx v4.23.15
 node v20.x.x (or newer)
 ```
 
-- [ ] Both commands print a version. No `could not determine executable` or `Cannot find module` errors.
+- [x] Both commands print a version. No `could not determine executable` or `Cannot find module` errors.
 
 ### 2.3 Type-check
 
@@ -167,7 +167,7 @@ npm run check
 This runs `tsc --noEmit`: it checks every `.ts` file in `src` for type errors without writing
 any output.
 
-- [ ] The command finishes and prints **no** `error TS...` lines.
+- [x] The command finishes and prints **no** `error TS...` lines.
 
 ### 2.4 Build (compile TypeScript to JavaScript)
 
@@ -177,8 +177,8 @@ npm run build
 
 This runs `tsc`, which compiles everything in `src` into `dist` (same folder layout).
 
-- [ ] The command finishes and prints **no** `error TS...` lines.
-- [ ] A `dist` folder now exists, with `main.js`, `models.js`, `report.js`, `repository.js`,
+- [x] The command finishes and prints **no** `error TS...` lines.
+- [x] A `dist` folder now exists, with `main.js`, `models.js`, `report.js`, `repository.js`,
       `storage.js` and the `demo` and `lab` folders inside.
 
 ---
@@ -217,7 +217,7 @@ Revenue (confirmed): 1,700,000 VND
 ⚠ 1 conflict(s) found
 ```
 
-- [ ] 5 bookings · revenue **1,700,000 VND** · **1 conflict** (Minh overlaps Liam).
+- [x] 5 bookings · revenue **1,700,000 VND** · **1 conflict** (Minh overlaps Liam).
 
 ### 3.3 Add a booking from the command line
 
@@ -237,7 +237,7 @@ Revenue (confirmed): 2,000,000 VND
 ⚠ 1 conflict(s) found
 ```
 
-- [ ] Trang is added · revenue **2,000,000 VND**.
+- [x] Trang is added · revenue **2,000,000 VND**.
 
 ### 3.4 Add an overlapping booking
 
@@ -256,7 +256,7 @@ Revenue (confirmed): 2,200,000 VND
 ⚠ 2 conflict(s) found
 ```
 
-- [ ] Khoa is added with **"overlaps Liam"** · revenue **2,200,000 VND** · **2 conflict(s) found**.
+- [x] Khoa is added with **"overlaps Liam"** · revenue **2,200,000 VND** · **2 conflict(s) found**.
 
 The app only *warns* about overlaps. It doesn't block them yet; that's the homework.
 
@@ -266,7 +266,7 @@ The app only *warns* about overlaps. It doesn't block them yet; that's the homew
 npm run reset
 ```
 
-- [ ] `bookings.json` is back to the original 5 bookings.
+- [x] `bookings.json` is back to the original 5 bookings.
 
 ---
 
@@ -294,7 +294,7 @@ see the same error in the terminal, then undo the change.
 | `src/demo/booking.ts` (`npm run demo:booking`) | 10 | Describing data: union, enum, required fields, `undefined` | `No booking with id bk9` | The 4 changes listed at the top of the file, or uncomment `console.log(found.customer)` |
 | `src/demo/private.ts` (`npm run demo:private`) | 11 | `private` and generics: `Repository<Room>` vs `Repository<Booking>` | `1 room, 1 booking` | Add `bookingRepo.items = [];` (`'items' is private`), or `bookingRepo.add(roomRepo.getAll()[0]);` (a `Room` is not a `Booking`) |
 
-- [ ] After undoing your changes, `npm run check` prints no errors again.
+- [x] After undoing your changes, `npm run check` prints no errors again.
 
 ### 4.3 Node runtime labs
 
@@ -338,8 +338,8 @@ You should see `tick` a few times, then `Heavy work, 2 seconds...`.
 After about 4 seconds, press **Ctrl+C** to stop it. If you're asked
 `Terminate batch job (Y/N)?`, type `Y`.
 
-- [ ] All demos in 4.1–4.3 ran and the output matched the tables.
-- [ ] `npm run reset` was run at the end, so `bookings.json` has the original 5 bookings.
+- [x] All demos in 4.1–4.3 ran and the output matched the tables.
+- [x] `npm run reset` was run at the end, so `bookings.json` has the original 5 bookings.
 
 ---
 
@@ -391,7 +391,7 @@ git config --global user.email "you@example.com"
 git config --global init.defaultBranch main
 ```
 
-- [ ] `git config --global --list` now shows your name and email.
+- [x] `git config --global --list` now shows your name and email.
 
 ### 6.2 Check out a branch
 
@@ -429,7 +429,7 @@ git add src/report.ts src/main.ts
 git status
 ```
 
-- [ ] Under `Changes to be committed` you see only that feature's files. Other files stay in
+- [x] Under `Changes to be committed` you see only that feature's files. Other files stay in
       `Changes not staged` and wait for their own commit.
 
 Picked a wrong file? Take it out (your edits to the file are kept):
@@ -491,7 +491,7 @@ git push -u origin feature/<short-name>
 `-u` links your local branch to the remote one, so later pushes are just `git push`.
 The first push may open a browser window to sign in.
 
-- [ ] The push ends with `* [new branch] feature/<short-name> -> feature/<short-name>`.
+- [x] The push ends with `* [new branch] feature/<short-name> -> feature/<short-name>`.
 
 Then open a Pull Request from `feature/<short-name>` into `main` on GitHub.
 
